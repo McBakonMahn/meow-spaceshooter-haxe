@@ -4,3 +4,4 @@ lib/
 lime/
 scripts/
 .haxelib/
+pushbuild.sh
