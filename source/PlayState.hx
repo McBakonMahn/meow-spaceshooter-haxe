@@ -10,6 +10,11 @@ import flixel.util.FlxColor;
 import flixel.addons.display.FlxBackdrop;
 import flixel.group.FlxGroup;
 import flixel.util.FlxSave;
+import flixel.addons.ui.FlxUIButton;
+import flixel.addons.ui.FlxUIPopup;
+import flixel.addons.ui.interfaces.IFlxUIState;
+import flixel.addons.ui.interfaces.IFlxUIWidget;
+import flixel.addons.ui.FlxUITypedButton;
 
 class PlayState extends FlxState {
 	var fire:FlxSprite;
@@ -35,7 +40,7 @@ class PlayState extends FlxState {
 	var highScored:FlxText;
 	var accuracyText:FlxText;
 
-	// Stats tracking
+	// Stats tracking (STATTRACK HAHAH)
 	var totalShots:Int = 0;
 	var boostHits:Int = 0;
 	var normalHits:Int = 0;
@@ -46,7 +51,6 @@ class PlayState extends FlxState {
 	override public function create() {
 		super.create();
 
-		// Initialize save system
 		gameSave = new FlxSave();
 		gameSave.bind("SpaceShooterSave");
 		loadGame();
@@ -76,6 +80,9 @@ class PlayState extends FlxState {
 		ship.loadGraphic("assets/images/ship.png");
 		ship.scale.set(0.565, 0.565);
 		ship.updateHitbox();
+		// Set hitbox to only visible pixels (adjust these values based on ship sprite, no more roblox mm2 ahh hitboxes and dying when >:( hit air near u)
+		ship.setSize(ship.width * 0.7, ship.height * 0.7);
+		ship.centerOffsets();
 		add(ship);
 		add(fire);
 
@@ -106,7 +113,7 @@ class PlayState extends FlxState {
 	}
 
 	function setupPad() {
-		var bScale:Float = 2.75;
+		var bScale:Float = 3.2;
 		var bSize:Float = 44 * bScale;
 		var padX:Float = 20;
 		var padY:Float = FlxG.height - (bSize * 3) - 20;
@@ -142,17 +149,10 @@ class PlayState extends FlxState {
 		bullet.animation.frameIndex = 0;
 		bullet.reset(ship.x + ship.width - 20, ship.y + (ship.height / 2) - 40);
 		bullet.velocity.x = 800;
-		bullet.scale.set(0.5, 0.5);
+		bullet.scale.set(0.8, 0.8);
 		bullet.updateHitbox();
 
 		totalShots++;
-
-		if (score < 6500) {
-			score -= 15;
-		} else {
-			score -= 15 * Std.int((score / 6500));
-		}
-		scored.text = 'Score: $score';
 	}
 
 	function spawnEnemy(elapsed:Float) {
@@ -172,11 +172,11 @@ class PlayState extends FlxState {
 		super.update(elapsed);
 
 		if (score > 6500) {
-			speedMultiplier = score / 5500;
+			speedMultiplier = score / 5500; // make stuff harder for those who think the game s to easy
 		}
 		spawnEnemy(elapsed);
 		fire.y = ship.y + (ship.height / 2) - (fire.height / 2);
-		fire.x = ship.x - 40;
+		fire.x = ship.x - 100;
 
 		handleInput(elapsed);
 
@@ -184,6 +184,12 @@ class PlayState extends FlxState {
 			if (b.x > FlxG.width) {
 				b.kill();
 				missedShots++;
+				if (score < 6500) {
+					score -= 15;
+				} else {
+					score -= 15 * Std.int((score / 6500));
+				}
+				scored.text = 'Score: $score';
 				updateAccuracy();
 			}
 		});
@@ -220,12 +226,17 @@ class PlayState extends FlxState {
 
 		FlxG.overlap(ship, enemies, function(s:FlxSprite, e:FlxSprite) {
 			saveHighScore();
-			FlxG.switchState(MenuState.new);
+
+			openSubState(new KiriMessage("Game Over", "Do you want to restart?", function() {
+				FlxG.resetState();
+			}, function() {
+				FlxG.switchState(MenuState.new);
+			}));
 		});
 	}
 
 	function handleInput(elapsed:Float) {
-		var speed:Float = 300;
+		var speed:Float = isBoosting ? 450 : 300;
 		ship.velocity.set(0, 0);
 		isBoosting = false;
 		if (useTouch) {
@@ -316,6 +327,7 @@ class PlayState extends FlxState {
 	function onToggle() {
 		useTouch = !useTouch;
 		pad.visible = useTouch;
+		FlxG.mouse.visible = !useTouch;
 		updateButtonLabel();
 		saveSettings();
 	}
