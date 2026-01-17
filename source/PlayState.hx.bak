@@ -1,0 +1,97 @@
+package;
+
+import flixel.FlxState;
+import flixel.FlxSprite;
+import flixel.ui.FlxVirtualPad;
+import flixel.ui.FlxButton;
+import flixel.FlxG;
+import flixel.util.FlxColor;
+
+class PlayState extends FlxState {
+	var fire:FlxSprite;
+	var pad:FlxVirtualPad;
+	var toggleBtn:FlxButton;
+	var useTouch:Bool = false;
+
+	override public function create() {
+		super.create();
+
+		fire = new FlxSprite(0, 0);
+		fire.loadGraphic("assets/images/fire.png", true, 85, 85);
+		fire.animation.add("burn", [0, 1, 2, 3, 4, 5, 6], 12, true);
+		fire.animation.play("burn");
+		add(fire);
+
+		useTouch = FlxG.onMobile;
+
+		pad = new FlxVirtualPad(FULL, A_B);
+		pad.visible = useTouch;
+		add(pad);
+
+		toggleBtn = new FlxButton(10, 50, "", onToggle);
+		add(toggleBtn);
+
+		updateButtonLabel();
+	}
+
+	function onToggle() {
+		useTouch = !useTouch;
+		pad.visible = useTouch;
+		updateButtonLabel();
+	}
+
+	function updateButtonLabel() {
+		toggleBtn.text = "TouchControls: " + (useTouch ? "On" : "Off");
+		toggleBtn.label.color = useTouch ? FlxColor.GREEN : FlxColor.RED;
+	}
+
+	override public function update(elapsed:Float) {
+		super.update(elapsed);
+
+		if (FlxG.touches.justStarted().length > 0) {
+			if (!FlxG.fullscreen)
+				FlxG.fullscreen = true;
+		}
+
+		handleInput();
+	}
+
+	function handleInput() {
+		var speed:Float = 300;
+		fire.velocity.set(0, 0);
+
+		if (useTouch) {
+			if (pad.getButton(UP).pressed)
+				fire.velocity.y = -speed;
+			if (pad.getButton(DOWN).pressed)
+				fire.velocity.y = speed;
+			if (pad.getButton(LEFT).pressed)
+				fire.velocity.x = -speed;
+			if (pad.getButton(RIGHT).pressed)
+				fire.velocity.x = speed;
+
+			if (pad.getButton(A).justPressed) {/* Action A */}
+
+			if (pad.getButton(B).pressed) {
+				fire.animation.curAnim.frameRate = 24;
+			} else {
+				fire.animation.curAnim.frameRate = 12;
+			}
+		} else {
+			if (FlxG.keys.pressed.W)
+				fire.velocity.y = -speed;
+			if (FlxG.keys.pressed.S)
+				fire.velocity.y = speed;
+			if (FlxG.keys.pressed.A)
+				fire.velocity.x = -speed;
+			if (FlxG.keys.pressed.D)
+				fire.velocity.x = speed;
+
+			if (FlxG.keys.pressed.SHIFT) {
+				fire.animation.curAnim.frameRate = 24;
+			} else {
+				fire.animation.curAnim.frameRate = 12;
+			}
+		}
+	}
+}
